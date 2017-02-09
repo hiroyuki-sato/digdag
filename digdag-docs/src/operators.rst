@@ -1696,27 +1696,29 @@ To use Gmail SMTP server, you need to do either of:
 
 .. code-block:: yaml
 
+    timezone: UTC
+
     _export:
       mail:
+        # To use Gmail SMTP server, you need to do either of:
+        #   a) Generate a new app password at
+        #      https://security.google.com/settings/security/apppasswords
+        #      This needs to enable 2-Step Verification first.
+        #   b) Enable access for less secure apps at
+        #      https://www.google.com/settings/security/lesssecureapps
+        #      This works even if 2-Step Verification is not enabled.
+        # And then, execute to set password:
+        #      digdag secret --local --set mail.password=...password...
+        host: smtp.gmail.com
+        port: 587
         from: "you@gmail.com"
+        username: "you@gmail.com"
+        debug: true
 
-    +step1:
-      mail>: body.txt
-      subject: workflow started
-      to: [me@example.com]
-
-    +step2:
-      mail>:
-        data: this is email body embedded in a .dig file
-      subject: workflow started
-      to: [me@example.com]
-
-    +step3:
-      sh>: this_task_might_fail.sh
-      _error:
-        mail>: body.txt
-        subject: this workflow failed
-        to: [me@example.com]
+    +step:
+      mail>: examples/mail.txt
+      subject: this is a smtp test mail
+      to: [to1@example.com, to2@example.com]
 
 Secrets
 ~~~~~~~
