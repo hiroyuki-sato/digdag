@@ -144,4 +144,11 @@ public abstract class AbstractJdbcConnection
             logger.warn("Failed to close a database connection. Ignoring.", ex);
         }
     }
+
+    private void loggingExecuteSQL(String sql)
+    {
+        for(String line: sql.split("\r?\n")) {
+            logger.info(line);
+        }
+    }
 }
