@@ -23,9 +23,17 @@ public abstract class AbstractJdbcConnection
 
     private String quoteString;
 
+    private final boolean debug;
+
     protected AbstractJdbcConnection(Connection connection)
     {
+        this(connection,false);
+    }
+
+    protected AbstractJdbcConnection(Connection connection,boolean debug)
+    {
         this.connection = connection;
+        this.debug = debug;
         try {
             connection.setAutoCommit(true);
         }
@@ -147,6 +155,9 @@ public abstract class AbstractJdbcConnection
 
     private void loggingExecuteSQL(String sql)
     {
+        if(!debug) {
+            return;
+        }
         for(String line: sql.split("\r?\n")) {
             logger.info(line);
         }

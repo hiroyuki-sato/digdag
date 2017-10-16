@@ -101,7 +101,7 @@ public abstract class AbstractJdbcJobOperator<C>
             queryId = state.get(QUERY_ID, UUID.class);
         }
 
-        try (JdbcConnection connection = connect(connectionConfig)) {
+        try (JdbcConnection connection = connect(connectionConfig,true)) {
             Exception statementError = connection.validateStatement(query);
             if (statementError != null) {
                 throw new ConfigException("Given query is invalid", statementError);

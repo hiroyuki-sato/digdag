@@ -50,10 +50,17 @@ public class PgOperatorFactory
         }
 
         @Override
+        protected PgConnection connect(PgConnectionConfig connectionConfig,boolean debug)
+        {
+            return PgConnection.open(connectionConfig,debug);
+        }
+
+        @Override
         protected PgConnection connect(PgConnectionConfig connectionConfig)
         {
-            return PgConnection.open(connectionConfig);
+            return PgConnection.open(connectionConfig,false);
         }
+
 
         @Override
         protected String type()

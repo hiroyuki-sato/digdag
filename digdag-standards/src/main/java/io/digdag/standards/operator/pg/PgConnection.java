@@ -24,14 +24,14 @@ public class PgConnection
     extends AbstractJdbcConnection
 {
     @VisibleForTesting
-    public static PgConnection open(PgConnectionConfig config)
+    public static PgConnection open(PgConnectionConfig config,boolean debug)
     {
-        return new PgConnection(config.openConnection());
+        return new PgConnection(config.openConnection(),debug);
     }
 
-    protected PgConnection(Connection connection)
+    protected PgConnection(Connection connection,boolean debug)
     {
-        super(connection);
+        super(connection,debug);
     }
 
     @Override

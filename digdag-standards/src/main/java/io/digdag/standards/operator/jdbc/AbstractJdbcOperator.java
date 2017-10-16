@@ -36,6 +36,8 @@ abstract class AbstractJdbcOperator<C>
 
     protected abstract JdbcConnection connect(C connectionConfig);
 
+    protected abstract JdbcConnection connect(C connectionConfig,boolean debug);
+
     protected abstract String type();
 
     protected List<String> nestedConfigKeys()
