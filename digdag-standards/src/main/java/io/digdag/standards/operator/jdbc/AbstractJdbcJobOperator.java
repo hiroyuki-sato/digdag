@@ -60,6 +60,8 @@ public abstract class AbstractJdbcJobOperator<C>
         Optional<TableReference> insertInto = params.getOptional("insert_into", TableReference.class);
         Optional<TableReference> createTable = params.getOptional("create_table", TableReference.class);
 
+        boolean debug = params.get("debug",boolean.class,false);
+
         int queryModifier = 0;
         if (insertInto.isPresent()) queryModifier++;
         if (createTable.isPresent()) queryModifier++;
@@ -101,7 +103,7 @@ public abstract class AbstractJdbcJobOperator<C>
             queryId = state.get(QUERY_ID, UUID.class);
         }
 
-        try (JdbcConnection connection = connect(connectionConfig,true)) {
+        try (JdbcConnection connection = connect(connectionConfig,debug)) {
             Exception statementError = connection.validateStatement(query);
             if (statementError != null) {
                 throw new ConfigException("Given query is invalid", statementError);

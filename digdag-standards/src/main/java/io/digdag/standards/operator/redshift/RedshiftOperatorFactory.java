@@ -56,7 +56,13 @@ public class RedshiftOperatorFactory
         @Override
         protected RedshiftConnection connect(RedshiftConnectionConfig connectionConfig)
         {
-            return RedshiftConnection.open(connectionConfig);
+            return RedshiftConnection.open(connectionConfig,false);
+        }
+
+        @Override
+        protected RedshiftConnection connect(RedshiftConnectionConfig connectionConfig, boolean debug)
+        {
+            return RedshiftConnection.open(connectionConfig,debug);
         }
 
         @Override

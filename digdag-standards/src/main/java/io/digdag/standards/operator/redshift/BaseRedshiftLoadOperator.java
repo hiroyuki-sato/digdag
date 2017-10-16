@@ -56,7 +56,14 @@ abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementCo
     @Override
     protected RedshiftConnection connect(RedshiftConnectionConfig connectionConfig)
     {
-        return RedshiftConnection.open(connectionConfig);
+        return RedshiftConnection.open(connectionConfig,false);
+    }
+
+    /* TODO: This method should be in XxxxConnectionConfig ? */
+    @Override
+    protected RedshiftConnection connect(RedshiftConnectionConfig connectionConfig,boolean debug)
+    {
+        return RedshiftConnection.open(connectionConfig,debug);
     }
 
     @Override
@@ -177,7 +184,7 @@ abstract class BaseRedshiftLoadOperator<T extends RedshiftConnection.StatementCo
     {
         boolean strictTransaction = strictTransaction(params);
 
-        try (RedshiftConnection connection = connect(connectionConfig)) {
+        try (RedshiftConnection connection = connect(connectionConfig,false)) {
             String query = buildSQLStatement(connection, statementConfig, false);
 
             Exception statementError = connection.validateStatement(query);

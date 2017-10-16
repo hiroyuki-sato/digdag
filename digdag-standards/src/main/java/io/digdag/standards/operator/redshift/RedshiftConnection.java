@@ -32,14 +32,14 @@ public class RedshiftConnection
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @VisibleForTesting
-    public static RedshiftConnection open(RedshiftConnectionConfig config)
+    public static RedshiftConnection open(RedshiftConnectionConfig config,boolean debug)
     {
-        return new RedshiftConnection(config.openConnection());
+        return new RedshiftConnection(config.openConnection(),debug);
     }
 
-    RedshiftConnection(Connection connection)
+    RedshiftConnection(Connection connection,boolean debug)
     {
-        super(connection);
+        super(connection,debug);
     }
 
     @Override
