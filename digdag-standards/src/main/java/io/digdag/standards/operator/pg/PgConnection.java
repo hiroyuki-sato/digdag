@@ -41,6 +41,7 @@ public class PgConnection
         try {
             execute("SET TRANSACTION READ ONLY");
             try (Statement stmt = connection.createStatement()) {
+                loggingExecuteSQL(sql);
                 ResultSet rs = stmt.executeQuery(sql);  // executeQuery throws exception if given query includes multiple statements
                 resultHandler.accept(new PgResultSet(rs));
             }

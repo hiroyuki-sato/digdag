@@ -153,7 +153,7 @@ public abstract class AbstractJdbcConnection
         }
     }
 
-    private void loggingExecuteSQL(String sql)
+    protected void loggingExecuteSQL(String sql)
     {
         if(!debug) {
             return;
