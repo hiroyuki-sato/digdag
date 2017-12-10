@@ -101,6 +101,9 @@ public class S3WaitOperatorFactory
             Optional<String> versionId = params.getOptional("version_id", String.class);
             Optional<Boolean> pathStyleAccess = params.getOptional("path_style_access", Boolean.class);
 
+            Optional<Integer> request_timeout = params.getOptional("read_timeout",Integer.class);
+            Optional<Integer> connect_timeout = params.getOptional("connect_timeout",Integer.class);
+
             if (command.isPresent() && (bucket.isPresent() || key.isPresent()) ||
                     !command.isPresent() && (!bucket.isPresent() || !key.isPresent())) {
                 throw new ConfigException("Either the s3_wait operator command or both 'bucket' and 'key' parameters must be set");
@@ -135,6 +138,12 @@ public class S3WaitOperatorFactory
 
             // Create S3 Client
             ClientConfiguration configuration = new ClientConfiguration();
+            if( request_timeout.isPresent() ){
+                configuration.setRequestTimeout(request_timeout.get().intValue());
+            }
+            if( connect_timeout.isPresent() ){
+                configuration.setConnectionTimeout(connect_timeout.get().intValue());
+            }
             Aws.configureProxy(configuration, endpoint, environment);
             AWSCredentials credentials = new BasicAWSCredentials(accessKey, secretKey);
             AmazonS3Client s3Client = s3ClientFactory.create(credentials, configuration);
