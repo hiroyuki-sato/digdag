@@ -1,5 +1,6 @@
 package io.digdag.core.plugin;
 
+import java.net.Proxy;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.ServiceConfigurationError;
@@ -7,9 +8,14 @@ import java.io.File;
 import java.net.URL;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
+
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 
+import com.treasuredata.client.ProxyConfig;
+import io.digdag.client.JavaNetProxyBuilder;
+import io.digdag.client.Proxies;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
@@ -49,6 +55,11 @@ public class RemotePluginLoader
         new RemoteRepository.Builder("central", "default", "http://central.maven.org/maven2/").build(),
         new RemoteRepository.Builder("jcenter", "default", "http://jcenter.bintray.com/").build(),
     });
+
+    private static final List<RemoteRepository.Builder> DEFAULT_REPOSITORIES_T = ImmutableList.copyOf(new RemoteRepository.Builder[] {
+            new RemoteRepository.Builder("central", "default", "http://central.maven.org/maven2/"),
+            new RemoteRepository.Builder("jcenter", "default", "http://jcenter.bintray.com/"),
+            });
 
     private static final List<String> PARENT_FIRST_PACKAGES = ImmutableList.copyOf(new String[] {
             "io.digdag.spi",
@@ -171,12 +182,14 @@ public class RemotePluginLoader
     private List<RemoteRepository> getRepositories(Spec spec)
     {
         ImmutableList.Builder<RemoteRepository> builder = ImmutableList.builder();
+        Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv("http",System.getenv());
+        Proxy proxy = JavaNetProxyBuilder.proxyConfigBuilder(proxyConfig)
 
         builder.addAll(DEFAULT_REPOSITORIES);
-
+        
         int i = 1;
         for (String repo : spec.getRepositories()) {
-            builder.add(new RemoteRepository.Builder("repository-" + i, "default", repo).build());
+            builder.add(new RemoteRepository.Builder("repository-" + i, "default", repo).setProxy(proxy).build());
             i++;
         }
 
