@@ -22,6 +22,8 @@ dependencies {
     // which conflicts with undertow 1.4.0.Final -> jboss-logging 3.2.1.Final
     compile 'org.jboss.logging:jboss-logging:3.3.0.Final'
 
+    compile 'com.treasuredata.client:td-client:0.7.36'
+
     testCompile 'com.squareup.okhttp3:okhttp:3.4.1'
     testCompile 'com.squareup.okhttp3:mockwebserver:3.4.1'
 }

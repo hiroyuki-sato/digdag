@@ -7,13 +7,18 @@ import java.io.File;
 import java.net.URL;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
+
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 
+import com.treasuredata.client.ProxyConfig;
+import io.digdag.client.Proxies;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
+import org.eclipse.aether.repository.Proxy;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
@@ -45,10 +50,10 @@ public class RemotePluginLoader
 {
     private static final Logger logger = LoggerFactory.getLogger(RemotePluginLoader.class);
 
-    private static final List<RemoteRepository> DEFAULT_REPOSITORIES = ImmutableList.copyOf(new RemoteRepository[] {
-        new RemoteRepository.Builder("central", "default", "http://central.maven.org/maven2/").build(),
-        new RemoteRepository.Builder("jcenter", "default", "http://jcenter.bintray.com/").build(),
-    });
+    private static final List<RemoteRepository.Builder> DEFAULT_REPOSITORIES = ImmutableList.copyOf(new RemoteRepository.Builder[] {
+            new RemoteRepository.Builder("central", "default", "http://central.maven.org/maven2/"),
+            new RemoteRepository.Builder("jcenter", "default", "http://jcenter.bintray.com/"),
+            });
 
     private static final List<String> PARENT_FIRST_PACKAGES = ImmutableList.copyOf(new String[] {
             "io.digdag.spi",
@@ -170,13 +175,24 @@ public class RemotePluginLoader
 
     private List<RemoteRepository> getRepositories(Spec spec)
     {
+        List<Proxy> proxies = buildProxies();
+
         ImmutableList.Builder<RemoteRepository> builder = ImmutableList.builder();
 
-        builder.addAll(DEFAULT_REPOSITORIES);
+        for( RemoteRepository.Builder repoBuilder : DEFAULT_REPOSITORIES ){
+            for( Proxy proxy : proxies ){
+                repoBuilder.setProxy(proxy);
+            }
+            builder.add(repoBuilder.build());
+        }
 
         int i = 1;
         for (String repo : spec.getRepositories()) {
-            builder.add(new RemoteRepository.Builder("repository-" + i, "default", repo).build());
+            RemoteRepository.Builder repoBuilder =  new RemoteRepository.Builder("repository-" + i, "default", repo);
+            for( Proxy proxy : proxies ){
+                repoBuilder.setProxy(proxy);
+            }
+            builder.add(repoBuilder.build());
             i++;
         }
 
@@ -195,4 +211,29 @@ public class RemotePluginLoader
 
         return new DependencyRequest(collectRequest, classpathFlter);
     }
+
+    private static List<Proxy> buildProxies(){
+
+        List<String> schemas = ImmutableList.of(Proxy.TYPE_HTTP, Proxy.TYPE_HTTPS);
+        ImmutableList.Builder<Proxy> builder = ImmutableList.builder();
+
+        for( String schema : schemas ){
+            Proxy proxy = buildProxy(schema);
+            if( proxy != null ){
+                builder.add(proxy);
+            }
+        }
+
+        return builder.build();
+
+    }
+
+    private static Proxy buildProxy(String schema){
+        Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv(schema,System.getenv());
+        if( !proxyConfig.isPresent() ){
+            return null;
+        }
+        return new Proxy(schema,proxyConfig.get().getHost(), proxyConfig.get().getPort() );
+    }
+
 }
