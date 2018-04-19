@@ -1,6 +1,5 @@
 package io.digdag.core.plugin;
 
-import java.net.Proxy;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.ServiceConfigurationError;
@@ -14,12 +13,12 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 
 import com.treasuredata.client.ProxyConfig;
-import io.digdag.client.JavaNetProxyBuilder;
 import io.digdag.client.Proxies;
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
+import org.eclipse.aether.repository.Proxy;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
@@ -181,19 +180,27 @@ public class RemotePluginLoader
 
     private List<RemoteRepository> getRepositories(Spec spec)
     {
-        ImmutableList.Builder<RemoteRepository> builder = ImmutableList.builder();
-        Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv("http",System.getenv());
-        Proxy proxy = JavaNetProxyBuilder.proxyConfigBuilder(proxyConfig)
+        List<Proxy> proxies = buildProxies();
 
-        builder.addAll(DEFAULT_REPOSITORIES);
-        
+        Proxy proxy = proxies.get(0);
+
+//        ImmutableList.Builder<RemoteRepository> builder = ImmutableList.builder();
+        ImmutableList.Builder<RemoteRepository.Builder> builder = ImmutableList.builder();
+
+        builder.addAll(DEFAULT_REPOSITORIES_T);
+
         int i = 1;
         for (String repo : spec.getRepositories()) {
-            builder.add(new RemoteRepository.Builder("repository-" + i, "default", repo).setProxy(proxy).build());
+            builder.add(new RemoteRepository.Builder("repository-" + i, "default", repo);
             i++;
         }
 
-        return builder.build();
+        return builder.build().stream()
+                .map( s -> s.setProxy(proxy) )
+                .map( s -> s.build() )
+                .collect(Collectors.toList());
+
+        //return builder.build();
     }
 
     private static DependencyRequest buildDependencyRequest(List<RemoteRepository> repositories, String identifier, String scope)
@@ -207,5 +214,32 @@ public class RemotePluginLoader
         collectRequest.setRepositories(repositories);
 
         return new DependencyRequest(collectRequest, classpathFlter);
+    }
+
+    private static List<Proxy> buildProxies(){
+
+        ImmutableList.Builder<Proxy> builder = ImmutableList.builder();
+        Optional<Proxy> httpsProxy = buildProxy(Proxy.TYPE_HTTPS);
+        Optional<Proxy> httpProxy = buildProxy(Proxy.TYPE_HTTP);
+
+        if( httpsProxy.isPresent() ){
+            builder.add(httpsProxy.get());
+        }
+
+        if( httpProxy.isPresent() ){
+            builder.add(httpProxy.get());
+        }
+
+        return builder.build()
+
+    }
+
+    private static Optional<Proxy> buildProxy(String schema){
+        Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv(schema,System.getenv());
+        if( proxyConfig.isPresent() ){
+            Proxy proxy = new Proxy(schema,proxyConfig.get().getHost(), proxyConfig.get().getPort() );
+            return Optional.of(proxy);
+        }
+        return Optional.absent();
     }
 }
