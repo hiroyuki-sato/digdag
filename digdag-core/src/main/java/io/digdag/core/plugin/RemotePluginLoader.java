@@ -182,25 +182,26 @@ public class RemotePluginLoader
     {
         List<Proxy> proxies = buildProxies();
 
-        Proxy proxy = proxies.get(0);
+        ImmutableList.Builder<RemoteRepository> builder = ImmutableList.builder();
 
-//        ImmutableList.Builder<RemoteRepository> builder = ImmutableList.builder();
-        ImmutableList.Builder<RemoteRepository.Builder> builder = ImmutableList.builder();
-
-        builder.addAll(DEFAULT_REPOSITORIES_T);
+        for( RemoteRepository.Builder repoBuilder : DEFAULT_REPOSITORIES_T ){
+            for( Proxy proxy : proxies ){
+                repoBuilder.setProxy(proxy);
+            }
+            builder.add(repoBuilder.build());
+        }
 
         int i = 1;
         for (String repo : spec.getRepositories()) {
-            builder.add(new RemoteRepository.Builder("repository-" + i, "default", repo);
+            RemoteRepository.Builder repoBuilder =  new RemoteRepository.Builder("repository-" + i, "default", repo);
+            for( Proxy proxy : proxies ){
+                repoBuilder.setProxy(proxy);
+            }
+            builder.add(repoBuilder.build());
             i++;
         }
 
-        return builder.build().stream()
-                .map( s -> s.setProxy(proxy) )
-                .map( s -> s.build() )
-                .collect(Collectors.toList());
-
-        //return builder.build();
+        return builder.build();
     }
 
     private static DependencyRequest buildDependencyRequest(List<RemoteRepository> repositories, String identifier, String scope)
@@ -218,28 +219,26 @@ public class RemotePluginLoader
 
     private static List<Proxy> buildProxies(){
 
+        List<String> schemas = ImmutableList.of(Proxy.TYPE_HTTP, Proxy.TYPE_HTTPS);
         ImmutableList.Builder<Proxy> builder = ImmutableList.builder();
-        Optional<Proxy> httpsProxy = buildProxy(Proxy.TYPE_HTTPS);
-        Optional<Proxy> httpProxy = buildProxy(Proxy.TYPE_HTTP);
 
-        if( httpsProxy.isPresent() ){
-            builder.add(httpsProxy.get());
+        for( String schema : schemas ){
+            Proxy proxy = buildProxy(schema);
+            if( proxy != null ){
+                builder.add(proxy);
+            }
         }
 
-        if( httpProxy.isPresent() ){
-            builder.add(httpProxy.get());
-        }
-
-        return builder.build()
+        return builder.build();
 
     }
 
-    private static Optional<Proxy> buildProxy(String schema){
+    private static Proxy buildProxy(String schema){
         Optional<ProxyConfig> proxyConfig = Proxies.proxyConfigFromEnv(schema,System.getenv());
-        if( proxyConfig.isPresent() ){
-            Proxy proxy = new Proxy(schema,proxyConfig.get().getHost(), proxyConfig.get().getPort() );
-            return Optional.of(proxy);
+        if( !proxyConfig.isPresent() ){
+            return null;
         }
-        return Optional.absent();
+        return new Proxy(schema,proxyConfig.get().getHost(), proxyConfig.get().getPort() );
     }
+
 }
