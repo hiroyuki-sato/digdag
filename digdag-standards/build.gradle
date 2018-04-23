@@ -20,7 +20,7 @@ dependencies {
     compile 'org.yaml:snakeyaml:1.17'
 
     // postgresql
-    compile 'org.postgresql:postgresql:9.4.1211'
+    compile 'org.postgresql:postgresql:42.2.2'
 
     // aws
     compile "com.amazonaws:aws-java-sdk-kms:${project.ext.awsJavaSdkVersion}"
