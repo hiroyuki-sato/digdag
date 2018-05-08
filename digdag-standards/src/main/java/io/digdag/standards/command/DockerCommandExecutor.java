@@ -165,6 +165,7 @@ public class DockerCommandExecutor
             String message;
             try (ByteArrayOutputStream buffer = new ByteArrayOutputStream()) {
                 ProcessBuilder pb = new ProcessBuilder("docker", "images");
+                pb.directory(projectPath.toFile());
                 pb.redirectErrorStream(true);
                 Process p = pb.start();
 
@@ -200,6 +201,10 @@ public class DockerCommandExecutor
                 out.write(baseImageName.replace("\n", ""));
                 out.write("\n");
 
+                out.write("WORKDIR ");
+                out.write(projectPath.toString());
+                out.write("\n");
+
                 // Here shouldn't use 'ADD' because it spoils caching. Using the same base image
                 // and build commands should share pre-build revisions. Using revision name
                 // as the unique key is not good enough for local mode because revision name
@@ -214,12 +219,14 @@ public class DockerCommandExecutor
                 }
             }
 
+            System.out.println(Files.readAllLines(dockerFilePath));
             ImmutableList.Builder<String> command = ImmutableList.builder();
             command.add("docker").add("build");
             command.add("-f").add(dockerFilePath.toString());
             command.add("--force-rm");
             command.add("-t").add(imageName);
             command.add(projectPath.toString());
+            logger.info("Exec docker {}", command.build());
 
             ProcessBuilder docker = new ProcessBuilder(command.build());
             docker.redirectError(ProcessBuilder.Redirect.INHERIT);
