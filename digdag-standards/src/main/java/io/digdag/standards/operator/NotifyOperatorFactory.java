@@ -3,6 +3,10 @@ package io.digdag.standards.operator;
 import com.google.inject.Inject;
 import io.digdag.client.config.Config;
 import io.digdag.client.config.ConfigElement;
+import io.digdag.core.database.TransactionManager;
+import io.digdag.core.repository.ResourceNotFoundException;
+import io.digdag.core.session.SessionStoreManager;
+import io.digdag.core.session.StoredSessionAttemptWithSession;
 import io.digdag.spi.Notification;
 import io.digdag.spi.NotificationException;
 import io.digdag.spi.Notifier;
@@ -21,11 +25,15 @@ public class NotifyOperatorFactory
         implements OperatorFactory
 {
     private final Notifier notifier;
+    private final SessionStoreManager sm;
+    private final TransactionManager tm;
 
     @Inject
-    public NotifyOperatorFactory(Notifier notifier)
+    public NotifyOperatorFactory(Notifier notifier,SessionStoreManager sm,TransactionManager tm)
     {
         this.notifier = notifier;
+        this.sm = sm;
+        this.tm = tm;
     }
 
     public String getType()
@@ -36,7 +44,7 @@ public class NotifyOperatorFactory
     @Override
     public Operator newOperator(OperatorContext context)
     {
-        return new NotifyOperator(context, notifier);
+        return new NotifyOperator(context, notifier,sm,tm);
     }
 
     private static class NotifyOperator
@@ -44,11 +52,15 @@ public class NotifyOperatorFactory
     {
         private final TaskRequest request;
         private final Notifier notifier;
+        private final SessionStoreManager sm;
+        private final TransactionManager tm;
 
-        public NotifyOperator(OperatorContext context, Notifier notifier)
+        public NotifyOperator(OperatorContext context, Notifier notifier, SessionStoreManager sm,TransactionManager tm)
         {
             this.request = context.getTaskRequest();
             this.notifier = notifier;
+            this.sm = sm;
+            this.tm = tm;
         }
 
         @Override
@@ -57,6 +69,20 @@ public class NotifyOperatorFactory
             Config params = request.getConfig();
 
             String message = params.get("_command", String.class);
+
+            try {
+                tm.begin(() -> {
+                    StoredSessionAttemptWithSession attempt = sm.getSessionStore(request.getSiteId()).getAttemptById(request.getSessionId());
+                    System.out.println(attempt);
+                    System.out.println(attempt.getSession());
+                    return attempt;
+                        }, ResourceNotFoundException.class
+
+                );
+            } catch (ResourceNotFoundException ex ){
+
+            }
+
 
             Notification notification = Notification.builder(Instant.now(), message)
                     .siteId(request.getSiteId())
