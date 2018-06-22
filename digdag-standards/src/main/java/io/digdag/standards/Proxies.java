@@ -91,4 +91,27 @@ public class Proxies
 
         return Optional.of(builder.createProxyConfig());
     }
+    public static Optional<ProxyConfig> proxyConfigFromEnvForHost(String scheme, Map<String, String> env,String host){
+        List<String> preference = ImmutableList.of("no_proxy","NO_PROXY");
+
+        String noProxyEnvVarName = null;
+        String var;
+        for (String name : preference) {
+            var = env.getOrDefault(name, "").trim();
+            if (!var.isEmpty()) {
+                noProxyEnvVarName = name;
+                break;
+            }
+        }
+
+        if ( noProxyEnvVarName != null) {
+            for(String noProxyHost : noProxyEnvVarName.split(":")){
+                if( host.equals(noProxyHost) ){
+                    return Optional.absent();
+                }
+            }
+        }
+        return proxyConfigFromEnv(scheme,env);
+    }
+
 }
