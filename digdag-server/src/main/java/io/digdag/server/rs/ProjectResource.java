@@ -177,6 +177,7 @@ public class ProjectResource
     private final SecretControlStoreManager scsp;
     private final TransactionManager tm;
     private final ProjectArchiveLoader projectArchiveLoader;
+    private final Config systemConfig;
 
     @Inject
     public ProjectResource(
@@ -206,6 +207,7 @@ public class ProjectResource
         this.tm = tm;
         this.scsp = scsp;
         this.projectArchiveLoader = projectArchiveLoader;
+        this.systemConfig = systemConfig;
         MAX_SESSIONS_PAGE_SIZE = systemConfig.get("api.max_sessions_page_size", Integer.class, DEFAULT_SESSIONS_PAGE_SIZE);
         MAX_ARCHIVE_TOTAL_SIZE_LIMIT = systemConfig.get("api.max_archive_total_size_limit", Integer.class, DEFAULT_ARCHIVE_TOTAL_SIZE_LIMIT);
         MAX_ARCHIVE_FILE_SIZE_LIMIT = MAX_ARCHIVE_TOTAL_SIZE_LIMIT;
@@ -688,6 +690,11 @@ public class ProjectResource
             throws ResourceNotFoundException
     {
         tm.begin(() -> {
+            Optional<String> encryptionKey = systemConfig.getOptional("digdag.secret-encryption-key", String.class);
+            if( !encryptionKey.isPresent() ) {
+                throw new IllegalArgumentException("no digdag.secret-encryption-key key");
+            }
+
             if (!SecretValidation.isValidSecret(key, request.value())) {
                 throw new IllegalArgumentException("Invalid secret");
             }
