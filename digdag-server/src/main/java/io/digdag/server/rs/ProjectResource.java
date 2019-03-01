@@ -692,7 +692,7 @@ public class ProjectResource
         tm.begin(() -> {
             Optional<String> encryptionKey = systemConfig.getOptional("digdag.secret-encryption-key", String.class);
             if( !encryptionKey.isPresent() ) {
-                throw new IllegalArgumentException("no digdag.secret-encryption-key key");
+                throw new InternalServerErrorException("no digdag.secret-encryption-key key",Response.serverError().build());
             }
 
             if (!SecretValidation.isValidSecret(key, request.value())) {
