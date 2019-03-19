@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import io.digdag.client.config.Config;
 import io.digdag.spi.ParamServerClient;
 import io.digdag.spi.ParamServerClientConnection;
 import io.digdag.spi.Record;
@@ -28,11 +29,13 @@ public class RedisParamServerClient
     private final ObjectMapper objectMapper;
     private Jedis connection;
     private Map<String, String> msetTarget = new HashMap<>();
+    private Config systemConfig;
 
-    public RedisParamServerClient(ParamServerClientConnection connection, ObjectMapper objectMapper)
+    public RedisParamServerClient(ParamServerClientConnection connection, ObjectMapper objectMapper, Config systemConfig)
     {
         this.connection = (Jedis) connection.get();
         this.objectMapper = objectMapper;
+        this.systemConfig = systemConfig;
     }
 
     @Override
@@ -98,7 +101,8 @@ public class RedisParamServerClient
             if (!msetTarget.isEmpty()) {
                 Transaction multi = connection.multi();
                 for (Map.Entry<String, String> entry : msetTarget.entrySet()) {
-                    multi.setex(entry.getKey(), DEFAULT_TTL_IN_SEC, entry.getValue());
+                    int ttl_in_sec = systemConfig.get("param_server.ttl", int.class, DEFAULT_TTL_IN_SEC);
+                    multi.setex(entry.getKey(), ttl_in_sec, entry.getValue());
                 }
                 multi.exec();
             }

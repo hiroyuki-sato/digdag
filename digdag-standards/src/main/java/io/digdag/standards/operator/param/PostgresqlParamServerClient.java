@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
+import io.digdag.client.config.Config;
 import io.digdag.spi.ParamServerClient;
 import io.digdag.spi.ParamServerClientConnection;
 import io.digdag.spi.Record;
@@ -23,11 +24,14 @@ public class PostgresqlParamServerClient
 {
     private final ObjectMapper objectMapper;
     private Handle handle;
+    private Config systemConfig;
 
-    public PostgresqlParamServerClient(ParamServerClientConnection connection, ObjectMapper objectMapper)
+    public PostgresqlParamServerClient(ParamServerClientConnection connection, ObjectMapper objectMapper, Config systemConfig)
     {
         this.handle = (Handle) connection.get();
         this.objectMapper = objectMapper;
+        this.systemConfig = systemConfig;
+
     }
 
     @Override
@@ -37,6 +41,7 @@ public class PostgresqlParamServerClient
             throw new IllegalStateException("Connection has already closed");
         }
 
+        int ttl_in_sec = systemConfig.get("param_server.ttl", int.class, DEFAULT_TTL_IN_SEC);
         // In this method, timezone of `now()` is not specified.
         // Timezone depends on PostgreSQL server settings.
         Record rawRecord = handle
@@ -44,7 +49,7 @@ public class PostgresqlParamServerClient
                         "select key, value, value_type" +
                                 " from params" +
                                 " where key = :key and site_id = :site_id" +
-                                " and updated_at + INTERVAL '" + String.valueOf(DEFAULT_TTL_IN_SEC) + " seconds' >= now()" +
+                                " and updated_at + INTERVAL '" + String.valueOf(ttl_in_sec) + " seconds' >= now()" +
                                 " limit 1")
                 .bind("key", key)
                 .bind("site_id", siteId)

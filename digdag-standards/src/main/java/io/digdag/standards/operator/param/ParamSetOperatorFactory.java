@@ -44,7 +44,7 @@ public class ParamSetOperatorFactory
         // a param server client connection is fetched here manually.
         // `connectionManager` is an only SINGLETON object.
         ParamServerClientConnection connection = connectionManager.getConnection();
-        ParamServerClient paramServerClient = ParamServerClientFactory.build(connection, objectMapper);
+        ParamServerClient paramServerClient = ParamServerClientFactory.build(connection, objectMapper, systemConfig);
         return new ParamSetOperator(context, paramServerClient);
     }
 
