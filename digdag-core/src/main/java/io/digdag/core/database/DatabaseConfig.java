@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
@@ -88,6 +90,7 @@ public interface DatabaseConfig
                     .loginTimeout(config.get(keyPrefix + "." + "loginTimeout", int.class, 30))
                     .socketTimeout(config.get(keyPrefix + "." + "socketTimeout", int.class, 1800))
                     .ssl(config.get(keyPrefix + "." + "ssl", boolean.class, false))
+                    .options(buildJdbcOptions(config))
                     .build()));
             break;
         default:
@@ -257,6 +260,10 @@ public interface DatabaseConfig
             props.setProperty("loginTimeout", Integer.toString(rc.get().getLoginTimeout())); // seconds
             props.setProperty("socketTimeout", Integer.toString(rc.get().getSocketTimeout())); // seconds
             props.setProperty("tcpKeepAlive", "true");
+            if( rc.isPresent() ) {
+                rc.get().getOptions()
+                    .forEach((key,value) -> props.setProperty(key,value) );
+            }
             break;
 
         default:
@@ -282,5 +289,18 @@ public interface DatabaseConfig
     static boolean isPostgres(String databaseType)
     {
         return databaseType.equals("postgresql");
+    }
+
+    static Map<String,String> buildJdbcOptions(Config config)
+    {
+        Map map = new HashMap<String, String>();
+        config.getKeys()
+                .stream()
+                .filter((key) ->
+                        key.startsWith("database.jdbc.")
+                )
+                .forEach((key) ->
+                        map.put(key.replace("database.jdbc.", ""), config.get(key, String.class)));
+        return map;
     }
 }
