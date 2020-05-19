@@ -68,6 +68,7 @@ public class RuntimeParams
 
         // project_*
         params.set("project_id", request.getProjectId());
+        params.set("project_name", request.getProjectName().or(""));
 
         params.set("retry_attempt_name", request.getRetryAttemptName().orNull());
         params.set("attempt_id", request.getAttemptId());
